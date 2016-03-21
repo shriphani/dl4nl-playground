@@ -2,6 +2,7 @@
 PTB Dataset
 '''
 
+from numpy.random import uniform
 from sexpdata import loads, dumps, Symbol
 import os
 import sys
@@ -67,23 +68,60 @@ def process_file(a_file, tagset):
                 pass
     return file_data
 
+def split(ptb_filename, train=70, validation=20):
+    '''
+    Split the dataset.
+    '''
+    sequences = []
+    cur_seq = []
+    with open(ptb_filename, 'r') as handle:
+        for new_line in handle:
+            new_line = new_line.strip()
+            if new_line == '':
+                sequences.append(cur_seq)
+                cur_seq = []
+
+            else:
+                cur_seq.append(new_line)
+
+    train_seqs = []
+    validation_seqs = []
+    test_seqs = []
+
+    for seq in sequences:
+        sample = uniform()
+
+        if sample < 0.1:
+            validation_seqs.append(seq)
+
+        elif sample < 0.3:
+            test_seqs.append(seq)
+
+        else:
+            train_seqs.append(seq)
+
+    return train_seqs, validation_seqs, test_seqs
+
 if __name__ == '__main__':
-    tagset = load_tagset()
-    data = []
-    data_dir = '../data/eng_news_txt_tbnk-ptb_revised/data/penntree/'
-    for root, dirs, files in os.walk(data_dir):
-        for filename in files:
-            if filename.find('wsj') < 0:
-                continue
+    data = sys.argv[1]
+    train, val, test = split(data)
 
-            file_path = os.path.join(
-                root,
-                filename
-            )
+    print 'train:', len(train), 'validation:', len(val), 'test:', len(test)
 
-            file_data = process_file(file_path, tagset)
+    with open('ptb_pos_train.txt', 'w') as train_handle:
+        for seq in train:
+            for line in seq:
+                train_handle.write(line + '\n')
+            train_handle.write('\n')
 
-            for sequence in file_data:
-                for tag, tok in sequence:
-                    print tag, tok
-                print
+    with open('ptb_pos_val.txt', 'w') as val_handle:
+        for seq in val:
+            for line in seq:
+                val_handle.write(line + '\n')
+            val_handle.write('\n')
+
+    with open('ptb_pos_test.txt', 'w') as test_handle:
+        for seq in test:
+            for line in seq:
+                test_handle.write(line + '\n')
+            test_handle.write('\n')
